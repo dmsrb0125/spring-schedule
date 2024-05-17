@@ -25,8 +25,19 @@ public class MemoService {
         memoRepository.save(memo);
     }
 
-    public void updateMemo(Memo memo) {
-        memoRepository.save(memo);
+    public boolean checkPassword(Long id, String password) {
+        Memo memo = getMemoById(id);
+        return memo != null && memo.getPassword().equals(password);
+    }
+
+    public void updateMemo(Long id, Memo updatedMemo) {
+        Memo memo = getMemoById(id);
+        if (memo != null) {
+            memo.setTitle(updatedMemo.getTitle());
+            memo.setContents(updatedMemo.getContents());
+            memo.setUsername(updatedMemo.getUsername());
+            memoRepository.save(memo);
+        }
     }
 
     public void deleteMemo(Long id) {

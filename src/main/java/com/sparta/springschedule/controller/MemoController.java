@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 public class MemoController {
@@ -45,26 +46,16 @@ public class MemoController {
 
     @PostMapping("/memos/{id}/confirm")
     @ResponseBody
-    public ResponseEntity<Boolean> confirmPassword(@PathVariable Long id, @RequestParam String password) {
-        Memo memo = memoService.getMemoById(id);
-        if (memo != null && memo.getPassword().equals(password)) {
-            return ResponseEntity.ok(true);
-        }
-        return ResponseEntity.ok(false);
+    public ResponseEntity<Map<String, Boolean>> confirmPassword(@PathVariable Long id, @RequestParam String password) {
+        boolean isPasswordCorrect = memoService.checkPassword(id, password);
+        return ResponseEntity.ok(Map.of("success", isPasswordCorrect));
     }
 
     @PutMapping("/memos/{id}")
     @ResponseBody
-    public ResponseEntity<Void> updateMemo(@PathVariable Long id, @RequestBody Memo updatedMemo) {
-        Memo memo = memoService.getMemoById(id);
-        if (memo != null) {
-            memo.setTitle(updatedMemo.getTitle());
-            memo.setContents(updatedMemo.getContents());
-            memo.setUsername(updatedMemo.getUsername());
-            memoService.updateMemo(memo);
-            return ResponseEntity.ok().build();
-        }
-        return ResponseEntity.notFound().build();
+    public ResponseEntity<Void> updateMemo(@PathVariable Long id, Memo memo) {
+        memoService.updateMemo(id, memo);
+        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/memos/{id}")

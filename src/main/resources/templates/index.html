@@ -101,11 +101,6 @@
             right: 20px;
             bottom: 20px;
         }
-        .details-actions .field {
-            width: 100px;
-            padding: 5px;
-            margin: 0;
-        }
         .edit-field {
             width: 100%;
             padding: 10px;
@@ -119,7 +114,6 @@
         .edit-form-group {
             margin-bottom: 15px;
         }
-
     </style>
 </head>
 <body>
@@ -227,12 +221,12 @@
             })
         })
         .then(response => response.json())
-        .then(isValid => {
-            if (isValid) {
+        .then(result => {
+            if (result.success) {
                 document.getElementById("password-form").style.display = "none";
                 document.getElementById("edit-form").style.display = "block";
             } else {
-                alert("비밀번호가 틀렸습니다.");
+                alert("비밀번호가 맞지 않습니다.");
             }
         });
     }
@@ -245,12 +239,12 @@
         const contents = form.contents.value;
         const username = form.username.value;
 
-        fetch("/memos/" + id + "/edit", {
+        fetch("/memos/" + id, {
             method: "PUT",
             headers: {
-                "Content-Type": "application/json",
+                "Content-Type": "application/x-www-form-urlencoded",
             },
-            body: JSON.stringify({
+            body: new URLSearchParams({
                 title: title,
                 contents: contents,
                 username: username
@@ -267,35 +261,16 @@
     }
 
     function deleteMemo() {
-        const form = document.getElementById("password-form");
-        const id = form.getAttribute('data-id');
-        const password = form.password.value;
-
-        fetch("/memos/" + id + "/confirm", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/x-www-form-urlencoded",
-            },
-            body: new URLSearchParams({
-                password: password
-            })
+        const id = document.querySelector("#password-form").getAttribute('data-id');
+        fetch("/memos/" + id, {
+            method: "DELETE"
         })
-        .then(response => response.json())
-        .then(isValid => {
-            if (isValid) {
-                fetch("/memos/" + id, {
-                    method: "DELETE"
-                })
-                .then(response => {
-                    if (response.ok) {
-                        alert("메모가 삭제되었습니다.");
-                        location.reload();
-                    } else {
-                        alert("메모 삭제에 실패했습니다.");
-                    }
-                });
+        .then(response => {
+            if (response.ok) {
+                alert("메모가 삭제되었습니다.");
+                location.reload();
             } else {
-                alert("비밀번호가 틀렸습니다.");
+                alert("메모 삭제에 실패했습니다.");
             }
         });
     }
