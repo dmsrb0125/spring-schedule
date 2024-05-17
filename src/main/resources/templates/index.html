@@ -102,10 +102,24 @@
             bottom: 20px;
         }
         .details-actions .field {
-            width: auto;
+            width: 100px;
             padding: 5px;
             margin: 0;
         }
+        .edit-field {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            box-sizing: border-box;
+        }
+        .edit-label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        .edit-form-group {
+            margin-bottom: 15px;
+        }
+
     </style>
 </head>
 <body>
@@ -126,7 +140,7 @@
     <div class="list-section">
         <h3>등록된 일정</h3>
         <div id="memo-list">
-            <div th:each="memo : ${memos}" class="memo-item" th:data-id="${memo.id}" th:onclick="'showDetails(' + ${memo.id} + ')'">
+            <div th:each="memo : ${memos}" class="memo-item" th:data-id="${memo.id}" onclick="showDetails(this)">
                 <h4 th:text="${memo.title}">할 일 제목</h4>
                 <p th:text="'작성일: ' + ${memo.formattedDate}">작성일</p>
             </div>
@@ -143,21 +157,36 @@
             </div>
         </div>
         <p id="details-contents">할 일 내용</p>
-        <div class="details-actions">
-            <input type="password" class="field" placeholder="비밀번호" name="password" required>
-            <form method="post" action="/memos/{id}/edit">
-                <input type="hidden" name="id" value="{id}">
+        <form id="password-form" onsubmit="confirmPassword(event)">
+            <div class="details-actions">
+                <input type="password" class="field" placeholder="비밀번호" name="password" required>
                 <button type="submit" class="btn btn-edit">수정하기</button>
-            </form>
-            <form method="post" action="/memos/{id}/delete">
-                <input type="hidden" name="id" value="{id}">
-                <button type="submit" class="btn btn-delete">삭제하기</button>
-            </form>
-        </div>
+                <button type="button" class="btn btn-delete" onclick="deleteMemo()">삭제하기</button>
+            </div>
+        </form>
+        <form id="edit-form" style="display:none;" onsubmit="updateMemo(event)">
+            <div class="edit-form-group">
+                <label class="edit-label" for="title">할 일 제목</label>
+                <input type="text" class="edit-field" name="title" placeholder="할 일 제목" required>
+            </div>
+            <div class="edit-form-group">
+                <label class="edit-label" for="contents">할 일 내용</label>
+                <textarea class="edit-field" name="contents" cols="30" rows="5" placeholder="할 일 내용" required></textarea>
+            </div>
+            <div class="edit-form-group">
+                <label class="edit-label" for="username">담당자</label>
+                <input type="text" class="edit-field" name="username" placeholder="담당자" required>
+            </div>
+            <div class="details-actions">
+                <button type="submit" class="btn btn-edit">저장하기</button>
+            </div>
+        </form>
     </div>
 </div>
 <script>
-    function showDetails(id) {
+    function showDetails(element) {
+        const id = element.getAttribute('data-id');
+        clearDetails(); // Clear previous details
         fetch("/memos/" + id)
             .then(response => response.json())
             .then(data => {
@@ -165,10 +194,110 @@
                 document.getElementById("details-date").innerText = "작성일: " + data.formattedDate;
                 document.getElementById("details-username").innerText = "담당자: " + data.username;
                 document.getElementById("details-contents").innerText = data.contents;
-                document.querySelector(".details-actions form[action*='edit'] input[name='id']").value = id;
-                document.querySelector(".details-actions form[action*='delete'] input[name='id']").value = id;
+                document.querySelector("#password-form").setAttribute('data-id', id);
+                document.querySelector("#edit-form input[name='title']").value = data.title;
+                document.querySelector("#edit-form textarea[name='contents']").value = data.contents;
+                document.querySelector("#edit-form input[name='username']").value = data.username;
                 document.getElementById("details-section").style.display = "block";
             });
+    }
+
+    function clearDetails() {
+        document.getElementById("details-title").innerText = "할 일 제목";
+        document.getElementById("details-date").innerText = "작성일: 날짜";
+        document.getElementById("details-username").innerText = "담당자: 이름";
+        document.getElementById("details-contents").innerText = "할 일 내용";
+        document.querySelector("#password-form").reset();
+        document.getElementById("details-section").style.display = "none";
+    }
+
+    function confirmPassword(event) {
+        event.preventDefault();
+        const form = event.target;
+        const id = form.getAttribute('data-id');
+        const password = form.password.value;
+
+        fetch("/memos/" + id + "/confirm", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                password: password
+            })
+        })
+        .then(response => response.json())
+        .then(isValid => {
+            if (isValid) {
+                document.getElementById("password-form").style.display = "none";
+                document.getElementById("edit-form").style.display = "block";
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        });
+    }
+
+    function updateMemo(event) {
+        event.preventDefault();
+        const form = event.target;
+        const id = document.querySelector("#password-form").getAttribute('data-id');
+        const title = form.title.value;
+        const contents = form.contents.value;
+        const username = form.username.value;
+
+        fetch("/memos/" + id + "/edit", {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                title: title,
+                contents: contents,
+                username: username
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                alert("메모가 수정되었습니다.");
+                location.reload();
+            } else {
+                alert("메모 수정에 실패했습니다.");
+            }
+        });
+    }
+
+    function deleteMemo() {
+        const form = document.getElementById("password-form");
+        const id = form.getAttribute('data-id');
+        const password = form.password.value;
+
+        fetch("/memos/" + id + "/confirm", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+            },
+            body: new URLSearchParams({
+                password: password
+            })
+        })
+        .then(response => response.json())
+        .then(isValid => {
+            if (isValid) {
+                fetch("/memos/" + id, {
+                    method: "DELETE"
+                })
+                .then(response => {
+                    if (response.ok) {
+                        alert("메모가 삭제되었습니다.");
+                        location.reload();
+                    } else {
+                        alert("메모 삭제에 실패했습니다.");
+                    }
+                });
+            } else {
+                alert("비밀번호가 틀렸습니다.");
+            }
+        });
     }
 </script>
 </body>

@@ -4,12 +4,10 @@ import com.sparta.springschedule.entity.Memo;
 import com.sparta.springschedule.service.MemoService;
 import com.sparta.springschedule.util.DateTimeFormatterUtil;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -43,5 +41,36 @@ public class MemoController {
             memo.setFormattedDate(DateTimeFormatterUtil.formatDate(memo.getDate()));
         }
         return memo;
+    }
+
+    @PostMapping("/memos/{id}/confirm")
+    @ResponseBody
+    public ResponseEntity<Boolean> confirmPassword(@PathVariable Long id, @RequestParam String password) {
+        Memo memo = memoService.getMemoById(id);
+        if (memo != null && memo.getPassword().equals(password)) {
+            return ResponseEntity.ok(true);
+        }
+        return ResponseEntity.ok(false);
+    }
+
+    @PutMapping("/memos/{id}")
+    @ResponseBody
+    public ResponseEntity<Void> updateMemo(@PathVariable Long id, @RequestBody Memo updatedMemo) {
+        Memo memo = memoService.getMemoById(id);
+        if (memo != null) {
+            memo.setTitle(updatedMemo.getTitle());
+            memo.setContents(updatedMemo.getContents());
+            memo.setUsername(updatedMemo.getUsername());
+            memoService.updateMemo(memo);
+            return ResponseEntity.ok().build();
+        }
+        return ResponseEntity.notFound().build();
+    }
+
+    @DeleteMapping("/memos/{id}")
+    @ResponseBody
+    public ResponseEntity<Void> deleteMemo(@PathVariable Long id) {
+        memoService.deleteMemo(id);
+        return ResponseEntity.ok().build();
     }
 }

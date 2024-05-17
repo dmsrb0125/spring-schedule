@@ -24,4 +24,12 @@ public class MemoService {
     public void createMemo(Memo memo) {
         memoRepository.save(memo);
     }
+
+    public void updateMemo(Memo memo) {
+        memoRepository.save(memo);
+    }
+
+    public void deleteMemo(Long id) {
+        memoRepository.deleteById(id);
+    }
 }
